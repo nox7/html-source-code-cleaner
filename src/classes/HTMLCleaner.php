@@ -448,10 +448,34 @@
 		* or CSS in either <script> or <style> elements.
 		*/
 		public function processCharacterData(DOMCharacterData $node, $tabDepth){
-			$this->cleanHTML .= sprintf(
-				"%s%s\n",
-				$this->getTabs($tabDepth),
-				trim($node->textContent),
-			);
+			// Break into lines and just make sure they are minimally tabbed
+			$lines = explode("\n", $node->textContent);
+			$numBaseTabsFromFirstSourceCodeLine = null;
+			foreach($lines as $line){
+				if (trim($line) !== ""){
+					$currentTabsForDepth = $this->getTabs($tabDepth);
+					$additionalTabs = "";
+					preg_match("/^(\t+).*/", $line, $matches);
+
+					if (isset($matches[1])){
+						$existingTabs = $matches[1];
+						if ($numBaseTabsFromFirstSourceCodeLine === null){
+							$numBaseTabsFromFirstSourceCodeLine = strlen($existingTabs);
+						}else{
+							$additionalTabsNeeded = strlen($existingTabs) - $numBaseTabsFromFirstSourceCodeLine;
+							if ($additionalTabsNeeded > 0){
+								$additionalTabs = str_repeat($this->tabCharacter, $additionalTabsNeeded);
+							}
+						}
+					}
+
+					$this->cleanHTML .= sprintf(
+						"%s%s%s\n",
+						$currentTabsForDepth,
+						$additionalTabs,
+						trim($line),
+					);
+				}
+			}
 		}
 	}
