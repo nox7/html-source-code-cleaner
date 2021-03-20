@@ -1,17 +1,20 @@
 <?php
 	require_once __DIR__ . "/HTMLParser.php";
+	require_once __DIR__ . "/HTMLNodeSettings.php";
 
 	class HTMLCleaner{
 
 		private string $tabCharacter = "\t";
 		public string $cleanHTML;
 		public HTMLParser $parser;
+		public HTMLNodeSettings $nodeSettings;
 
 		/** @property DOMElement $currentElementContext The current DOMElement the cleaner is inside */
 		public ?DOMElement $currentElementContext;
 
-		public function __construct(string $html){
+		public function __construct(string $html, HTMLNodeSettings $nodeSettings){
 			$parser = new HTMLParser($html);
+			$this->nodeSettings = $nodeSettings;
 			$this->cleanHTML = "<!doctype html>\n";
 			$this->parser = $parser;
 		}
@@ -57,7 +60,7 @@
 		public function getAttributeString(DOMElement $element): string{
 			$attributes = "";
 			if ($element->hasAttributes()){
-				
+
 				$attributes = " ";
 				$counter = 0;
 
@@ -111,25 +114,44 @@
 
 			// Get the attribute string
 			$attributes = $this->getAttributeString($node);
+			$nodeSettings = $this->nodeSettings;
 
-			// Append the tabs, opening element, and a newline
-			$this->cleanHTML .= sprintf(
-				"%s<%s%s>\n",
-				$this->getTabs($tabDepth),
-				$nodeName,
-				$attributes,
-			);
+			// Check the element type to determine the tabbing and spacing
+			// as well as the need to check for inner children at all
+			if ($nodeSettings->isBlockElement($nodeName)){
 
-			// Check for children
-			if ($node->childNodes->length > 0){
-				$this->iterateChildren($node, $tabDepth + 1);
+				// Append the tabs, opening element, and a newline
+				$this->cleanHTML .= sprintf(
+					"%s<%s%s>\n",
+					$this->getTabs($tabDepth),
+					$nodeName,
+					$attributes,
+				);
+
+				// Check for children
+				if ($node->childNodes->length > 0){
+					$this->iterateChildren($node, $tabDepth + 1);
+				}
+
+				// Append the tabs, closing element, and a newline
+				$this->cleanHTML .= sprintf(
+					"%s</%s>\n",
+					$this->getTabs($tabDepth),
+					$nodeName,
+				);
+			}elseif ($nodeSettings->isIsolatedSelfClosingElement($nodeName)){
+				$this->cleanHTML .= sprintf(
+					"%s<%s%s>\n",
+					$this->getTabs($tabDepth),
+					$nodeName,
+					$attributes,
+				);
+			}elseif ($nodeSettings->isInlineSelfClosingElement($nodeName)){
+				$this->cleanHTML .= sprintf(
+					"<%s%s>",
+					$nodeName,
+					$attributes,
+				);
 			}
-
-			// Append the tabs, closing element, and a newline
-			$this->cleanHTML .= sprintf(
-				"%s</%s>\n",
-				$this->getTabs($tabDepth),
-				$nodeName,
-			);
 		}
 	}
