@@ -256,11 +256,11 @@
 						}else{
 							// The parent node is not an inline element
 							// and this is the first element (no previous sibling) in the parent.
-							// It should be left-trimmed.
+							// It should be left-trimmed and right-trimmed of new lines
 							$this->cleanHTML .= sprintf(
 								"%s%s",
 								$this->getTabs($tabDepth),
-								ltrim($textContent),
+								rtrim(ltrim($textContent), "\n\t"),
 							);
 						}
 					}else{
@@ -450,14 +450,14 @@
 					);
 				}
 			}elseif ($nodeSettings->isInlineSelfClosingElement($nodeName)){
-				if ($this->hasPrevTextOrInlineSibling($node)){
-					$this->cleanHTML .= sprintf(
-						"<%s%s>",
-						$nodeName,
-						$attributes,
-					);
-				}else{
-					if ($this->hasNextTextOrInlineSibling($node)){
+				if ($this->hasPrevTextOrInlineSibling($node) || $this->hasNextTextOrInlineSibling($node)){
+					if ($this->hasPrevTextOrInlineSibling($node) && !$this->hasNextTextOrInlineSibling($node)){
+						$this->cleanHTML .= sprintf(
+							"<%s%s>\n",
+							$nodeName,
+							$attributes,
+						);
+					}elseif (!$this->hasPrevTextOrInlineSibling($node) && $this->hasNextTextOrInlineSibling($node)){
 						$this->cleanHTML .= sprintf(
 							"%s<%s%s>",
 							$this->getTabs($tabDepth),
@@ -466,12 +466,18 @@
 						);
 					}else{
 						$this->cleanHTML .= sprintf(
-							"%s<%s%s>\n",
-							$this->getTabs($tabDepth),
+							"<%s%s>",
 							$nodeName,
 							$attributes,
 						);
 					}
+				}else{
+					$this->cleanHTML .= sprintf(
+						"%s<%s%s>\n",
+						$this->getTabs($tabDepth),
+						$nodeName,
+						$attributes,
+					);
 				}
 			}
 		}
