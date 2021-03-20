@@ -1,4 +1,12 @@
 <?php
+
+	/*
+		NOTE: The inner DOM parser will have issues if the HTML document
+		is a fragment. For example, a fragment without the outer <html> will not
+		properly parse a <style></style> block for some reason. This class
+		must turn fragments into HTML documents.
+	*/
+
 	require_once __DIR__ . "/HTMLParser.php";
 	require_once __DIR__ . "/HTMLNodeSettings.php";
 
@@ -21,11 +29,14 @@
 
 			if ($this->parser->document->getElementsByTagName("html")->length === 0){
 				$this->isFragment = true;
-				$this->cleanHTML = "";
+				$html = "<!DOCTYPE html><html><body>$html</body></html>";
+				$parser = new HTMLParser($html);
+				$this->parser = $parser;
 			}else{
 				$this->isFragment = false;
-				$this->cleanHTML = "<!doctype html>";
 			}
+
+			$this->cleanHTML = "<!DOCTYPE html>\n";
 		}
 
 		/**
@@ -33,6 +44,21 @@
 		*/
 		public function cleanDocument(){
 			$this->iterateChildren($this->parser->document);
+
+			// If this document was originally a fragment, turn it back into a fragment
+			// now that parsing is done.
+			if ($this->isFragment){
+				// Iterate over every line and remove two tab characters
+				$newCleanHTML = "";
+				$lines = explode("\n", $this->cleanHTML);
+				foreach($lines as $lineNumber=>$line){
+					// Dont count the fragment's doctype, <html>, <body>, </body>, or </html>
+					if ($lineNumber > 2 && $lineNumber < count($lines) - 3){
+						$newCleanHTML .= substr($line, 2) . "\n";
+					}
+				}
+				$this->cleanHTML = $newCleanHTML;
+			}
 		}
 
 		/**
