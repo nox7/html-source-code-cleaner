@@ -52,6 +52,37 @@
 		}
 
 		/**
+		* Gets the node's attributes as a string
+		*/
+		public function getAttributeString(DOMElement $element): string{
+			$attributes = "";
+			if ($element->hasAttributes()){
+				
+				$attributes = " ";
+				$counter = 0;
+
+				foreach($element->attributes as $domAttr){
+					$name = $domAttr->name;
+					$value = $domAttr->value;
+					$attributes .= sprintf(
+						"%s=\"%s\"",
+						$name,
+						$value
+					);
+
+					++$counter;
+
+					// Add a trailing space if there are more attributes to append
+					if ($counter < $element->attributes->length){
+						$attributes .= " ";
+					}
+				}
+			}
+
+			return $attributes;
+		}
+
+		/**
 		* Process a text node
 		*/
 		public function processText(DOMText $textNode, int $tabDepth){
@@ -78,11 +109,15 @@
 			$this->currentElementContext = $node;
 			$nodeName = $node->nodeName;
 
+			// Get the attribute string
+			$attributes = $this->getAttributeString($node);
+
 			// Append the tabs, opening element, and a newline
 			$this->cleanHTML .= sprintf(
-				"%s<%s>\n",
+				"%s<%s%s>\n",
 				$this->getTabs($tabDepth),
 				$nodeName,
+				$attributes,
 			);
 
 			// Check for children
