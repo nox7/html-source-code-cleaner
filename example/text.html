@@ -1,24 +1,22 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
-	<head>
-		<meta charset="utf-8">
-		<title></title>
-	</head>
-	<body>
-		<div></div>
-		<br>
-		<p>
-			<picture>
-				<img src="">
-			</picture>
-			<img src="">
-			<br>
-			This is a paragraph text. With stuff in it. <a href="#">Link in text</a>. Now you've been linked.
-		</p>
-		<div>
-			<a href="#">Link without text siblings</a>
-			<a href="#">Link without text siblings</a>
-			<a href="#">Link without text siblings</a>
+<div class="bg-white shadow p-4">
+	<h3 class="mb-3">Page Views</h3>
+	<div class="form-group row">
+		<div class="col-xl-6 mb-xl-0 mb-3">
+			<div class="material-text-input always-has-text">
+				<label>From</label>
+				<input type="date" class="form-control" id="page-views-date-start" value="1">
+			</div>
 		</div>
-	</body>
-</html>
+		<div class="col-xl-6">
+			<div class="material-text-input always-has-text">
+				<label>To</label>
+				<input type="date" class="form-control" id="page-views-date-end" value="12">
+			</div>
+		</div>
+	</div>
+	<div id="apply-page-view-date-change-button-container" class="my-2" style="display:none;">
+		<button class="btn btn-sm btn-primary" type="button" id="apply-date-change-page-views">Apply</button>
+	</div>
+	<hr>
+	<div id="page-views-graph-wrapper"><svg class="line-graph" id="page-views-graph-container"></svg></div>
+</div>
