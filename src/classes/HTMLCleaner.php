@@ -5,6 +5,8 @@
 	class HTMLCleaner{
 
 		private string $tabCharacter = "\t";
+		private bool $isFragment;
+
 		public string $cleanHTML;
 		public HTMLParser $parser;
 		public HTMLNodeSettings $nodeSettings;
@@ -15,8 +17,15 @@
 		public function __construct(string $html, HTMLNodeSettings $nodeSettings){
 			$parser = new HTMLParser($html);
 			$this->nodeSettings = $nodeSettings;
-			$this->cleanHTML = "<!doctype html>\n";
 			$this->parser = $parser;
+
+			if ($this->parser->document->getElementsByTagName("html")->length === 0){
+				$this->isFragment = true;
+				$this->cleanHTML = "";
+			}else{
+				$this->isFragment = false;
+				$this->cleanHTML = "<!doctype html>";
+			}
 		}
 
 		/**
@@ -52,6 +61,19 @@
 			}else{
 				return "";
 			}
+		}
+
+		/**
+		* Check if a node has only text children
+		*/
+		public function hasOnlyTextChildren(DOMElement $element): bool{
+			foreach ($element->childNodes as $node){
+				if ($node->nodeType !== XML_TEXT_NODE){
+					return false;
+				}
+			}
+
+			return true;
 		}
 
 		/**
@@ -258,26 +280,46 @@
 			// Check the element type to determine the tabbing and spacing
 			// as well as the need to check for inner children at all
 			if ($nodeSettings->isBlockElement($nodeName)){
+				if ($node->childNodes->length === 0){
+					$this->cleanHTML .= sprintf(
+						"%s<%s%s></%s>\n",
+						$this->getTabs($tabDepth),
+						$nodeName,
+						$attributes,
+						$nodeName,
+					);
+				}else{
+					if ($this->hasOnlyTextChildren($node)){
+						$this->cleanHTML .= sprintf(
+							"%s<%s%s>%s</%s>\n",
+							$this->getTabs($tabDepth),
+							$nodeName,
+							$attributes,
+							trim($this->parser->getInnerHTML($node)),
+							$nodeName,
+						);
+					}else{
+						// Append the tabs, opening element, and a newline
+						$this->cleanHTML .= sprintf(
+							"%s<%s%s>\n",
+							$this->getTabs($tabDepth),
+							$nodeName,
+							$attributes,
+						);
 
-				// Append the tabs, opening element, and a newline
-				$this->cleanHTML .= sprintf(
-					"%s<%s%s>\n",
-					$this->getTabs($tabDepth),
-					$nodeName,
-					$attributes,
-				);
+						// Check for children
+						if ($node->childNodes->length > 0){
+							$this->iterateChildren($node, $tabDepth + 1);
+						}
 
-				// Check for children
-				if ($node->childNodes->length > 0){
-					$this->iterateChildren($node, $tabDepth + 1);
+						// Append the tabs, closing element, and a newline
+						$this->cleanHTML .= sprintf(
+							"%s</%s>\n",
+							$this->getTabs($tabDepth),
+							$nodeName,
+						);
+					}
 				}
-
-				// Append the tabs, closing element, and a newline
-				$this->cleanHTML .= sprintf(
-					"%s</%s>\n",
-					$this->getTabs($tabDepth),
-					$nodeName,
-				);
 			}elseif ($nodeSettings->isIsolatedSelfClosingElement($nodeName)){
 				$this->cleanHTML .= sprintf(
 					"%s<%s%s>\n",
