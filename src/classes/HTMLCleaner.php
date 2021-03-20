@@ -164,50 +164,65 @@
 
 			// Trim whitespace from the textContent
 			// TODO Don't do this for some elements? Check $currentElementContext
-			$textContent = trim($textContent);
+			$textContentTrimmed = trim($textContent);
 
-			if ($textContent !== ""){
+			if ($textContentTrimmed !== ""){
 				if ($this->hasPrevTextOrInlineSibling($textNode) || $this->hasNextTextOrInlineSibling($textNode)){
 					if ($this->hasPrevTextOrInlineSibling($textNode) && !$this->hasNextTextOrInlineSibling($textNode)){
+						// The previous sibling is a text node or an inline element
+						// but there is no next sibling. The ending content needs to be rtrim'd
 						$this->cleanHTML .= sprintf(
-							" %s\n",
-							$textContent,
+							"%s\n",
+							rtrim($textContent),
 						);
 					}elseif(!$this->hasPrevTextOrInlineSibling($textNode) && $this->hasNextTextOrInlineSibling($textNode)){
+						// There is a next text or inline sibling, but not a previous
 						if ($this->nodeSettings->isInlineElement($textNode->parentNode->nodeName)){
+							// The parent node is an inline element
 							$this->cleanHTML .= sprintf(
 								"%s",
 								$textContent,
 							);
 						}else{
+							// The parent node is not an inline element
+							// and this is the first element (no previous sibling) in the parent.
+							// It should be left-trimmed.
 							$this->cleanHTML .= sprintf(
-								"%s%s ",
+								"%s%s",
 								$this->getTabs($tabDepth),
-								$textContent,
+								ltrim($textContent),
 							);
 						}
 					}else{
 						// Both siblings are inline or text nodes
 					}
 				}else{
+					// There are no siblings
 					if ($this->nodeSettings->isInlineElement($textNode->parentNode->nodeName)){
+						// The parent node is an inline element
 						if ($this->hasNonEmptyTextSiblings($textNode->parentNode)){
+							// The parent node has text node siblings, so this could be an
+							// inline element with textual siblings (such as an anchor in
+							// text or a strong, i, em, element)
 							$this->cleanHTML .= sprintf(
 								"%s",
-								$textContent,
+								$textContentTrimmed,
 							);
 						}else{
+							// The inline element has no textual siblings
+							// it needs tabbing
 							$this->cleanHTML .= sprintf(
 								"%s%s\n",
 								$this->getTabs($tabDepth),
-								$textContent,
+								$textContentTrimmed,
 							);
 						}
 					}else{
+						// No siblings and the parent node is not an inline element
 						$this->cleanHTML .= sprintf(
 							"%s%s\n",
 							$this->getTabs($tabDepth),
-							$textContent,
+							$textContentTrimmed,
 						);
 					}
 				}
