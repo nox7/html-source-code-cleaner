@@ -48,6 +48,8 @@
 					$this->processText($domNode, $tabDepth);
 				}elseif ($nodeType === XML_ELEMENT_NODE){
 					$this->processNode($domNode, $tabDepth);
+				}else{
+					$this->processCharacterData($domNode, $tabDepth);
 				}
 			}
 		}
@@ -413,5 +415,17 @@
 					}
 				}
 			}
+		}
+
+		/**
+		* Processes document character data. This is usually JavaScript source code
+		* or CSS in either <script> or <style> elements.
+		*/
+		public function processCharacterData(DOMCharacterData $node, $tabDepth){
+			$this->cleanHTML .= sprintf(
+				"%s%s\n",
+				$this->getTabs($tabDepth),
+				trim($node->textContent),
+			);
 		}
 	}
