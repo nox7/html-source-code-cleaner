@@ -229,10 +229,22 @@
 					if ($this->hasPrevTextOrInlineSibling($textNode) && !$this->hasNextTextOrInlineSibling($textNode)){
 						// The previous sibling is a text node or an inline element
 						// but there is no next sibling. The ending content needs to be rtrim'd
-						$this->cleanHTML .= sprintf(
-							"%s\n",
-							rtrim($textContent),
-						);
+
+						// Further, check for cases where the previous sibling is an inline element and not a text node
+						if ($textNode->previousSibling->nodeType === XML_TEXT_NODE){
+							// CAN TWO TEXT NODES EVEN BE NEXT TO EACH OTHER?
+							// Probably not, so this should NEVER happen and is a useless if statement.
+							$this->cleanHTML .= sprintf(
+								"%s\n",
+								rtrim($textContent),
+							);
+						}else{
+							$this->cleanHTML .= sprintf(
+								"\n%s%s\n",
+								$this->getTabs($tabDepth),
+								$textContentTrimmed,
+							);
+						}
 					}elseif(!$this->hasPrevTextOrInlineSibling($textNode) && $this->hasNextTextOrInlineSibling($textNode)){
 						// There is a next text or inline sibling, but not a previous
 						if ($this->nodeSettings->isInlineElement($textNode->parentNode->nodeName)){
@@ -379,13 +391,34 @@
 					$attributes,
 				);
 			}elseif ($nodeSettings->isInlineElement($nodeName)){
-				if ($this->hasNonEmptyTextSiblings($node)){
+				if ($this->hasPrevTextOrInlineSibling($node) || $this->hasNextTextOrInlineSibling($node)){
 					// True inline element with other text
-					$this->cleanHTML .= sprintf(
-						"<%s%s>",
-						$nodeName,
-						$attributes,
-					);
+					if ($this->hasPrevTextOrInlineSibling($node) && !$this->hasNextTextOrInlineSibling($node)){
+						$this->cleanHTML .= sprintf(
+							"<%s%s>",
+							$nodeName,
+							$attributes,
+						);
+					}elseif (!$this->hasPrevTextOrInlineSibling($node) && $this->hasNextTextOrInlineSibling($node)){
+						$this->cleanHTML .= sprintf(
+							"%s<%s%s>",
+							$this->getTabs($tabDepth),
+							$nodeName,
+							$attributes,
+						);
+					}else{
+						// Has both textual or inline siblings around it
+						// This is an odd case and will never look good. For example:
+						/*
+							Hello <span> <img src=""> </span> there!
+						*/
+						// That is when this case happens
+						$this->cleanHTML .= sprintf(
+							"<%s%s>",
+							$nodeName,
+							$attributes,
+						);
+					}
 
 					// Check for children
 					if ($node->childNodes->length > 0){
