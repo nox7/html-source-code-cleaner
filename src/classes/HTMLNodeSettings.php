@@ -22,7 +22,7 @@
 		* line (such as <img>, or <link>)
 		*/
 		public $isolatedSelfClosingElements = [
-			"link","img","meta","input",
+			"link","img","meta","input","hr","source",
 		];
 
 		/**
