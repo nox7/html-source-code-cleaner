@@ -95,7 +95,11 @@
 						return true;
 					}
 				}
-				if ($this->nodeSettings->isInlineElement($prevSibling->nodeName)){
+				if (
+					$this->nodeSettings->isInlineElement($prevSibling->nodeName)
+					||
+					$this->nodeSettings->isInlineSelfClosingElement($prevSibling->nodeName)
+				){
 					return true;
 				}
 			}
@@ -117,7 +121,11 @@
 						return true;
 					}
 				}
-				if ($this->nodeSettings->isInlineElement($nextSibling->nodeName)){
+				if (
+					$this->nodeSettings->isInlineElement($nextSibling->nodeName)
+					||
+					$this->nodeSettings->isInlineSelfClosingElement($nextSibling->nodeName)
+				){
 					return true;
 				}
 			}
@@ -195,6 +203,11 @@
 						}
 					}else{
 						// Both siblings are inline or text nodes
+						// Use left trimmed text content without tabbing
+						$this->cleanHTML .= sprintf(
+							"%s",
+							ltrim($textContent),
+						);
 					}
 				}else{
 					// There are no siblings
@@ -311,11 +324,29 @@
 					);
 				}
 			}elseif ($nodeSettings->isInlineSelfClosingElement($nodeName)){
-				$this->cleanHTML .= sprintf(
-					"<%s%s>",
-					$nodeName,
-					$attributes,
-				);
+				if ($this->hasPrevTextOrInlineSibling($node)){
+					$this->cleanHTML .= sprintf(
+						"<%s%s>",
+						$nodeName,
+						$attributes,
+					);
+				}else{
+					if ($this->hasNextTextOrInlineSibling($node)){
+						$this->cleanHTML .= sprintf(
+							"%s<%s%s>",
+							$this->getTabs($tabDepth),
+							$nodeName,
+							$attributes,
+						);
+					}else{
+						$this->cleanHTML .= sprintf(
+							"%s<%s%s>\n",
+							$this->getTabs($tabDepth),
+							$nodeName,
+							$attributes,
+						);
+					}
+				}
 			}
 		}
 	}
