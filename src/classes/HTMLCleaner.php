@@ -55,6 +55,77 @@
 		}
 
 		/**
+		* Checks if the siblings of an element are non-empty text nodes
+		*/
+		public function hasNonEmptyTextSiblings(DOMElement $element): bool{
+			if (property_exists($element, "previousSibling")){
+				$prevSibling = $element->previousSibling;
+			}
+
+			if (property_exists($element, "nextSibling")){
+				$nextSibling = $element->nextSibling;
+			}
+
+			if (isset($prevSibling) && $prevSibling->nodeType === XML_TEXT_NODE){
+				if (trim($prevSibling->textContent) !== ""){
+					return true;
+				}
+			}
+
+			if (isset($nextSibling) && $nextSibling->nodeType === XML_TEXT_NODE){
+				if (trim($nextSibling->textContent) !== ""){
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/**
+		* Checks if the siblings of an element are non-empty text nodes or inline elements
+		*/
+		public function hasPrevTextOrInlineSibling(DOMNode $node): bool{
+			if (property_exists($node, "previousSibling")){
+				$prevSibling = $node->previousSibling;
+			}
+
+			if (isset($prevSibling)){
+				if ($prevSibling->nodeType === XML_TEXT_NODE){
+					if (trim($prevSibling->textContent) !== ""){
+						return true;
+					}
+				}
+				if ($this->nodeSettings->isInlineElement($prevSibling->nodeName)){
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/**
+		* Checks if the siblings of an element are non-empty text nodes or inline elements
+		*/
+		public function hasNextTextOrInlineSibling(DOMNode $node): bool{
+			if (property_exists($node, "nextSibling")){
+				$nextSibling = $node->nextSibling;
+			}
+
+			if (isset($nextSibling)){
+				if ($nextSibling->nodeType === XML_TEXT_NODE){
+					if (trim($nextSibling->textContent) !== ""){
+						return true;
+					}
+				}
+				if ($this->nodeSettings->isInlineElement($nextSibling->nodeName)){
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/**
 		* Gets the node's attributes as a string
 		*/
 		public function getAttributeString(DOMElement $element): string{
@@ -96,11 +167,50 @@
 			$textContent = trim($textContent);
 
 			if ($textContent !== ""){
-				$this->cleanHTML .= sprintf(
-					"%s%s\n",
-					$this->getTabs($tabDepth),
-					$textContent,
-				);
+				if ($this->hasPrevTextOrInlineSibling($textNode) || $this->hasNextTextOrInlineSibling($textNode)){
+					if ($this->hasPrevTextOrInlineSibling($textNode) && !$this->hasNextTextOrInlineSibling($textNode)){
+						$this->cleanHTML .= sprintf(
+							" %s\n",
+							$textContent,
+						);
+					}elseif(!$this->hasPrevTextOrInlineSibling($textNode) && $this->hasNextTextOrInlineSibling($textNode)){
+						if ($this->nodeSettings->isInlineElement($textNode->parentNode->nodeName)){
+							$this->cleanHTML .= sprintf(
+								"%s",
+								$textContent,
+							);
+						}else{
+							$this->cleanHTML .= sprintf(
+								"%s%s ",
+								$this->getTabs($tabDepth),
+								$textContent,
+							);
+						}
+					}else{
+						// Both siblings are inline or text nodes
+					}
+				}else{
+					if ($this->nodeSettings->isInlineElement($textNode->parentNode->nodeName)){
+						if ($this->hasNonEmptyTextSiblings($textNode->parentNode)){
+							$this->cleanHTML .= sprintf(
+								"%s",
+								$textContent,
+							);
+						}else{
+							$this->cleanHTML .= sprintf(
+								"%s%s\n",
+								$this->getTabs($tabDepth),
+								$textContent,
+							);
+						}
+					}else{
+						$this->cleanHTML .= sprintf(
+							"%s%s\n",
+							$this->getTabs($tabDepth),
+							$textContent,
+						);
+					}
+				}
 			}
 		}
 
@@ -110,6 +220,7 @@
 		public function processNode(DOMElement $node, int $tabDepth){
 			// Set the cleaner's current element context
 			$this->currentElementContext = $node;
+
 			$nodeName = $node->nodeName;
 
 			// Get the attribute string
@@ -146,6 +257,44 @@
 					$nodeName,
 					$attributes,
 				);
+			}elseif ($nodeSettings->isInlineElement($nodeName)){
+				if ($this->hasNonEmptyTextSiblings($node)){
+					// True inline element with other text
+					$this->cleanHTML .= sprintf(
+						"<%s%s>",
+						$nodeName,
+						$attributes,
+					);
+
+					// Check for children
+					if ($node->childNodes->length > 0){
+						$this->iterateChildren($node, $tabDepth + 1);
+					}
+
+					$this->cleanHTML .= sprintf(
+						"</%s>",
+						$nodeName,
+					);
+				}else{
+					$this->cleanHTML .= sprintf(
+						"%s<%s%s>\n",
+						$this->getTabs($tabDepth),
+						$nodeName,
+						$attributes,
+					);
+
+					// Check for children
+					if ($node->childNodes->length > 0){
+						$this->iterateChildren($node, $tabDepth + 1);
+					}
+
+					// Append the tabs, closing element, and a newline
+					$this->cleanHTML .= sprintf(
+						"%s</%s>\n",
+						$this->getTabs($tabDepth),
+						$nodeName,
+					);
+				}
 			}elseif ($nodeSettings->isInlineSelfClosingElement($nodeName)){
 				$this->cleanHTML .= sprintf(
 					"<%s%s>",
