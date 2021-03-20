@@ -11,6 +11,13 @@
 		];
 
 		/**
+		* Inline elements that are not self-closing
+		*/
+		public $inlineElements = [
+			"a","em","b","i","strong",
+		];
+
+		/**
 		* Self closing elements that you'd prefer be on their own
 		* line (such as <img>, or <link>)
 		*/
@@ -25,7 +32,7 @@
 		* inlined with text, such as a navigation bar.)
 		*/
 		public $inlineSelfClosingElements = [
-			"a",
+			"br",
 		];
 
 		/**
@@ -40,11 +47,23 @@
 				return false;
 			}
 
+			if (in_array($nodeName, $this->inlineElements)){
+				return false;
+			}
+
 			if (in_array($nodeName, $this->inlineSelfClosingElements)){
 				return false;
 			}
 
 			return true;
+		}
+
+		public function isInlineElement(string $nodeName): bool{
+			if (in_array($nodeName, $this->inlineElements)){
+				return true;
+			}
+
+			return false;
 		}
 
 		public function isIsolatedSelfClosingElement(string $nodeName): bool{
