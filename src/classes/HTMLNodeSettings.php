@@ -36,6 +36,12 @@
 		];
 
 		/**
+		* The maximum amount of characters a block element (with only text node children)
+		* can have in it before it becomes a tabbed newline of text
+		*/
+		public $maxTextualBlockElementCharacters = 60;
+
+		/**
 		* TODO: Allow this to be merged with provided arguments
 		*/
 		public function __construct(){

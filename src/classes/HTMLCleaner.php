@@ -290,14 +290,37 @@
 					);
 				}else{
 					if ($this->hasOnlyTextChildren($node)){
-						$this->cleanHTML .= sprintf(
-							"%s<%s%s>%s</%s>\n",
-							$this->getTabs($tabDepth),
-							$nodeName,
-							$attributes,
-							trim($this->parser->getInnerHTML($node)),
-							$nodeName,
-						);
+						$innerHTML = trim($this->parser->getInnerHTML($node));
+						if (strlen($innerHTML) > $this->nodeSettings->maxTextualBlockElementCharacters){
+							// Too many characters. Split it into a tabbed section inside the block
+							$this->cleanHTML .= sprintf(
+								"%s<%s%s>\n",
+								$this->getTabs($tabDepth),
+								$nodeName,
+								$attributes,
+							);
+
+							// Check for children
+							if ($node->childNodes->length > 0){
+								$this->iterateChildren($node, $tabDepth + 1);
+							}
+
+							// Append the tabs, closing element, and a newline
+							$this->cleanHTML .= sprintf(
+								"%s</%s>\n",
+								$this->getTabs($tabDepth),
+								$nodeName,
+							);
+						}else{
+							$this->cleanHTML .= sprintf(
+								"%s<%s%s>%s</%s>\n",
+								$this->getTabs($tabDepth),
+								$nodeName,
+								$attributes,
+								$innerHTML,
+								$nodeName,
+							);
+						}
 					}else{
 						// Append the tabs, opening element, and a newline
 						$this->cleanHTML .= sprintf(
