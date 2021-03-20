@@ -14,7 +14,7 @@
 		* Inline elements that are not self-closing
 		*/
 		public $inlineElements = [
-			"a","em","b","i","strong",
+			"a","em","b","i","strong","span",
 		];
 
 		/**
